@@ -2,18 +2,11 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Trái Tim 3D - Dành Tặng Thuỳ</title>
     <style>
-        body { 
-            margin: 0; 
-            overflow: hidden; 
-            background-color: #000; 
-            font-family: 'Arial', sans-serif; 
-        }
-        canvas { 
-            display: block; 
-        }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Arial', sans-serif; }
+        canvas { display: block; outline: none; }
     </style>
 </head>
 <body>
@@ -22,100 +15,94 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
     <script>
-        // 1. KHỞI TẠO KHÔNG GIAN 3D
         const scene = new THREE.Scene();
+        
+        // 1. CHỈNH LẠI CAMERA (Lùi ra xa để vừa màn hình điện thoại)
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 10, 70); // Đặt góc nhìn ban đầu
+        camera.position.set(0, 15, 120); 
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        // Quan trọng: Khử mờ trên màn hình điện thoại độ phân giải cao
+        renderer.setPixelRatio(window.devicePixelRatio); 
         document.body.appendChild(renderer.domElement);
 
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
-        controls.autoRotate = true; // Cho phép tự xoay
-        controls.autoRotateSpeed = 1.5;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 1.0;
 
-        // 2. TẠO TEXTURE CHỮ "T" CHO CÁC HẠT TRÁI TIM
+        // 2. TẠO CHỮ "T" SẮC NÉT
         function createLetterTexture() {
             const canvas = document.createElement('canvas');
-            canvas.width = 64;
-            canvas.height = 64;
+            canvas.width = 128; // Tăng độ phân giải cho nét chữ
+            canvas.height = 128;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#ffffff'; // Màu trắng để dễ pha màu
-            ctx.font = 'bold 48px "Courier New", monospace';
+            ctx.fillStyle = '#ff1493'; // Màu hồng đậm/đỏ rực
+            ctx.font = 'bold 90px "Arial", sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText('T', 32, 32);
+            // Thêm hiệu ứng lấp lánh nhẹ cho viền chữ
+            ctx.shadowColor = '#ff1493';
+            ctx.shadowBlur = 10;
+            ctx.fillText('T', 64, 64);
             return new THREE.CanvasTexture(canvas);
         }
         const tTexture = createLetterTexture();
 
-        // 3. TẠO HÌNH TRÁI TIM 3D BẰNG PHƯƠNG TRÌNH TAUBIN
-        const particlesCount = 10000; // Số lượng chữ T
+        // 3. TẠO HÌNH TRÁI TIM (Thu nhỏ lại để không lẹm viền)
+        const particlesCount = 7000; // Giảm bớt số lượng để chữ T không bị nén thành cục
         const geometry = new THREE.BufferGeometry();
         const positions = new Float32Array(particlesCount * 3);
-        const colors = new Float32Array(particlesCount * 3);
-        const color = new THREE.Color();
-
+        
         let added = 0;
-        // Quét các điểm ngẫu nhiên, nếu nằm trong khối trái tim thì lấy
         while (added < particlesCount) {
             const x = (Math.random() - 0.5) * 3;
             const y = (Math.random() - 0.5) * 3;
             const z = (Math.random() - 0.5) * 3;
             
-            // Phương trình Taubin Heart 3D
             const a = x*x + 2.25*y*y + z*z - 1;
             const val = a*a*a - x*x*z*z*z - 0.1125*y*y*z*z*z;
             
             if (val <= 0) {
-                const scale = 14; // Phóng to trái tim
+                const scale = 10; // Tỉ lệ vừa vặn (cũ là 14 quá to)
                 positions[added * 3] = x * scale;
-                positions[added * 3 + 1] = z * scale; // Trục Y trong WebGL là hướng lên (ứng với Z của toán học)
+                positions[added * 3 + 1] = z * scale; 
                 positions[added * 3 + 2] = y * scale; 
-
-                // Pha màu từ đỏ sang hồng lấp lánh
-                color.setHSL(0.95 + Math.random() * 0.05, 1.0, 0.4 + Math.random() * 0.4);
-                colors[added * 3] = color.r;
-                colors[added * 3 + 1] = color.g;
-                colors[added * 3 + 2] = color.b;
                 added++;
             }
         }
 
         geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
         const material = new THREE.PointsMaterial({
-            size: 1.2, // Kích thước chữ T
+            size: 2.8, // Kích thước chữ T to và rõ hơn
             map: tTexture,
-            vertexColors: true,
             transparent: true,
-            alphaTest: 0.5,
-            depthWrite: false, // Để các chữ không che viền nhau
-            blending: THREE.AdditiveBlending
+            opacity: 0.9,
+            depthWrite: false, // Tránh lỗi các chữ đè lên nhau bị đen viền
+            blending: THREE.AdditiveBlending // Tạo độ sáng lấp lánh
         });
 
         const heartMesh = new THREE.Points(geometry, material);
-        heartMesh.position.y = 5; // Nâng trái tim lên một chút
+        heartMesh.position.y = 8; // Đẩy lên một xíu cho cân đối
         scene.add(heartMesh);
 
-        // 4. TẠO VÒNG TRÒN CHỮ BÊN DƯỚI
-        function createTextRingTexture(wordsArray) {
+        // 4. VÒNG CHỮ XOAY DƯỚI ĐÁY
+        function createTextRingTexture(wordsArray, color, fontSize) {
             const canvas = document.createElement('canvas');
             canvas.width = 2048;
             canvas.height = 2048;
             const ctx = canvas.getContext('2d');
             
             ctx.translate(1024, 1024);
-            ctx.fillStyle = '#ff8fa3'; // Màu hồng nhạt cho chữ
-            ctx.font = 'bold 36px Arial';
+            ctx.fillStyle = color; 
+            ctx.font = `bold ${fontSize}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             
             const count = wordsArray.length;
-            const radius = 800; // Khoảng cách chữ đến tâm
+            const radius = 850; 
             for (let i = 0; i < count; i++) {
                 ctx.save();
                 const angle = (i / count) * Math.PI * 2;
@@ -126,28 +113,27 @@
             return new THREE.CanvasTexture(canvas);
         }
 
-        // Danh sách từ (lặp lại cho kín vòng tròn)
-        const list1 = ['I love you', 'Thuỳ', 'Moaz', 'Love', 'Happy', 'Bé iu', 'I love you', 'Thuỳ', 'Moaz', 'Love', 'Happy', 'Bé iu', 'I love you', 'Thuỳ', 'Moaz'];
-        const list2 = ['Thuỳ', 'Bé iu', 'Love', 'I love you', 'Moaz', 'Happy', 'Thuỳ', 'Bé iu', 'Love', 'I love you', 'Moaz', 'Happy', 'Thuỳ', 'Bé iu', 'Love'];
+        const list1 = ['I love you', 'Thuỳ', 'Moaz', 'Love', 'Happy', 'Bé iu', 'I love you', 'Thuỳ', 'Moaz', 'Love', 'Happy', 'Bé iu'];
+        const list2 = ['Thuỳ', 'Bé iu', 'Love', 'I love you', 'Moaz', 'Happy', 'Thuỳ', 'Bé iu', 'Love', 'I love you', 'Moaz', 'Happy'];
 
-        // Vòng ngoài
-        const ringGeo1 = new THREE.PlaneGeometry(60, 60);
+        // Vòng ngoài (Màu hồng sáng)
+        const ringGeo1 = new THREE.PlaneGeometry(65, 65);
         const ringMat1 = new THREE.MeshBasicMaterial({ 
-            map: createTextRingTexture(list1), 
+            map: createTextRingTexture(list1, '#ff6699', 55), 
             transparent: true, 
             side: THREE.DoubleSide,
             depthWrite: false,
             blending: THREE.AdditiveBlending 
         });
         const textRing1 = new THREE.Mesh(ringGeo1, ringMat1);
-        textRing1.rotation.x = -Math.PI / 2; // Đặt nằm ngang
-        textRing1.position.y = -15; // Đẩy xuống dưới trái tim
+        textRing1.rotation.x = -Math.PI / 2;
+        textRing1.position.y = -12; 
         scene.add(textRing1);
 
-        // Vòng trong (nhỏ hơn, quay ngược chiều)
+        // Vòng trong (Màu hồng nhạt, nhỏ hơn)
         const ringGeo2 = new THREE.PlaneGeometry(45, 45);
         const ringMat2 = new THREE.MeshBasicMaterial({ 
-            map: createTextRingTexture(list2), 
+            map: createTextRingTexture(list2, '#ff99bb', 50), 
             transparent: true, 
             side: THREE.DoubleSide,
             depthWrite: false,
@@ -155,42 +141,42 @@
         });
         const textRing2 = new THREE.Mesh(ringGeo2, ringMat2);
         textRing2.rotation.x = -Math.PI / 2;
-        textRing2.position.y = -16;
+        textRing2.position.y = -12.1;
         scene.add(textRing2);
 
-        // 5. HIỆU ỨNG SAO RƠI (Bối cảnh)
+        // 5. NỀN BẦU TRỜI SAO
         const starGeo = new THREE.BufferGeometry();
-        const starPos = new Float32Array(1500 * 3);
-        for(let i = 0; i < 1500 * 3; i++) {
-            starPos[i] = (Math.random() - 0.5) * 250;
+        const starPos = new Float32Array(1000 * 3);
+        for(let i = 0; i < 1000 * 3; i++) {
+            starPos[i] = (Math.random() - 0.5) * 300;
         }
         starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-        const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.5, transparent: true, opacity: 0.6 });
+        const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.8, transparent: true, opacity: 0.7 });
         const stars = new THREE.Points(starGeo, starMat);
         scene.add(stars);
 
-        // 6. XỬ LÝ CHUYỂN ĐỘNG VÀ RENDER
+        // 6. ANIMATION (Chuyển động)
         let time = 0;
         function animate() {
             requestAnimationFrame(animate);
-            time += 0.03;
+            time += 0.02;
 
-            // Hiệu ứng trái tim đập nhịp nhàng
-            const scale = 1 + 0.04 * Math.sin(time * 2);
+            // Tim đập
+            const scale = 1 + 0.04 * Math.sin(time * 3);
             heartMesh.scale.set(scale, scale, scale);
 
-            // Xoay 2 vòng chữ ở dưới
-            textRing1.rotation.z -= 0.003;
-            textRing2.rotation.z += 0.004;
+            // Vòng chữ xoay
+            textRing1.rotation.z -= 0.002;
+            textRing2.rotation.z += 0.003;
             
-            // Xoay nền sao nhẹ
+            // Sao trôi lững lờ
             stars.rotation.y += 0.0005;
 
-            controls.update(); // Để dùng chuột xoay 3D được
+            controls.update();
             renderer.render(scene, camera);
         }
 
-        // Tự động căn chỉnh khi thu phóng màn hình (Responsive)
+        // Tự động căn chỉnh khi xoay ngang/dọc điện thoại
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
