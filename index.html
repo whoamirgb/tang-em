@@ -3,272 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trái Tim Tặng Bạn - Xịn Hơn</title>
+    <title>Trái Tim 3D Tặng Em</title>
     <style>
-        body, html {
-            margin: 0;
-            padding: 0;
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Arial', sans-serif; }
+        canvas { display: block; }
+        #text-overlay {
+            position: absolute;
+            bottom: 10%;
             width: 100%;
-            height: 100%;
-            background-color: #000;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-family: 'Montserrat', sans-serif; /* Sử dụng font chữ đẹp hơn */
-        }
-        
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap');
-
-        canvas {
-            position: absolute;
-            z-index: 1;
-        }
-
-        .text-container {
-            position: absolute;
-            z-index: 3;
-            color: #ff4d6d;
             text-align: center;
+            color: #ff4d6d;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 0 0 10px #ff4d6d, 0 0 20px #ff4d6d;
             pointer-events: none;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            margin-top: -150px; /* Di chuyển văn bản lên trên trái tim */
+            animation: pulse 2s infinite;
         }
-        
-        h1 {
-            font-size: 3rem;
-            margin: 0;
-            text-shadow: 0 0 15px #ff4d6d, 0 0 30px #ff4d6d;
-            letter-spacing: 2px;
-        }
-        
-        p {
-            font-size: 1.4rem;
-            margin-top: 15px;
-            color: white;
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
-            min-height: 1.6em; /* Giữ chỗ cho hiệu ứng đánh chữ */
-        }
-
-        @media (max-width: 600px) {
-            h1 { font-size: 2rem; }
-            p { font-size: 1.1rem; }
-            .text-container { margin-top: -100px; }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
         }
     </style>
 </head>
 <body>
 
-    <div class="text-container">
-        <!-- BẠN CÓ THỂ SỬA CHỮ Ở ĐÂY -->
-        <h1>Anh Yêu Em</h1>
-        <p id="typingText"></p>
-    </div>
+    <div id="text-overlay">Thật sự yêu em rất nhiều đó ❤️</div>
 
-    <!-- Canvas cho nền sao -->
-    <canvas id="starfieldCanvas"></canvas>
-    <!-- Canvas cho trái tim chính -->
-    <canvas id="heartCanvas"></canvas>
-    <!-- Canvas cho phản chiếu -->
-    <canvas id="reflectionCanvas"></canvas>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
     <script>
-        const heartCanvas = document.getElementById('heartCanvas');
-        const heartCtx = heartCanvas.getContext('2d');
-        const reflectionCanvas = document.getElementById('reflectionCanvas');
-        const reflectionCtx = reflectionCanvas.getContext('2d');
-        const starfieldCanvas = document.getElementById('starfieldCanvas');
-        const starfieldCtx = starfieldCanvas.getContext('2d');
-        const typingText = document.getElementById('typingText');
+        // 1. Khởi tạo Không gian 3D (Scene, Camera, Renderer)
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 60;
+        camera.position.y = 10;
 
-        // Cài đặt
-        const settings = {
-            particles: 600, // Số lượng hạt trái tim
-            heartSize: 350, // Kích thước trái tim
-            color: '#ff3050', // Màu trái tim
-            reflectionBlur: 20, // Độ mờ phản chiếu
-            reflectionOpacity: 0.35, // Độ mờ của phản chiếu
-            stars: 200, // Số lượng ngôi sao
-            typingSpeed: 60, // Tốc độ đánh chữ (ms/ký tự)
-            // BẠN CÓ THỂ SỬA DÒNG CHỮ THỨ HAI Ở ĐÂY
-            message: "Mã nguồn này xịn hơn nhiều! ...và hoàn toàn miễn phí nha! ❤️"
-        };
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
 
-        let width, height, centerX, centerY;
-        let particles = [];
-        let reflectionParticles = [];
-        let stars = [];
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.autoRotate = true; // Tự động xoay 3D
+        controls.autoRotateSpeed = 2.0;
+
+        // 2. Tạo hình Trái tim 3D từ các hạt (Particles)
+        const particlesCount = 8000;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particlesCount * 3);
+        const colors = new Float32Array(particlesCount * 3);
+        const color = new THREE.Color();
+
+        for (let i = 0; i < particlesCount; i++) {
+            // Toán học tạo hình trái tim 3D
+            const u = Math.random() * Math.PI * 2;
+            const v = Math.random() * Math.PI;
+            
+            const x = 16 * Math.pow(Math.sin(u), 3) * Math.sin(v);
+            const y = (13 * Math.cos(u) - 5 * Math.cos(2*u) - 2 * Math.cos(3*u) - Math.cos(4*u)) * Math.sin(v);
+            const z = 8 * Math.cos(v); // Độ dày của trái tim
+
+            // Phóng to lên chút
+            const scale = 1.2;
+            positions[i * 3] = x * scale;
+            positions[i * 3 + 1] = y * scale;
+            positions[i * 3 + 2] = z * scale;
+
+            // Màu đỏ/hồng lấp lánh
+            color.setHSL(0.95 + Math.random() * 0.05, 1.0, 0.4 + Math.random() * 0.4);
+            colors[i * 3] = color.r;
+            colors[i * 3 + 1] = color.g;
+            colors[i * 3 + 2] = color.b;
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        // Material cho hạt
+        const material = new THREE.PointsMaterial({
+            size: 0.3,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending
+        });
+
+        const heartMesh = new THREE.Points(geometry, material);
+        // Trái tim theo công thức bị ngược, nên lật lại
+        heartMesh.rotation.x = Math.PI; 
+        scene.add(heartMesh);
+
+        // 3. Tạo Vòng sáng/chữ xoay quanh bên dưới (tạo cảm giác giống phản chiếu/đĩa chữ)
+        const ringGeo = new THREE.TorusGeometry(20, 0.1, 16, 100);
+        const ringMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.2, transparent: true, opacity: 0.5 });
+        const ring1 = new THREE.Points(ringGeo, ringMat);
+        ring1.rotation.x = Math.PI / 2;
+        ring1.position.y = -25;
+        scene.add(ring1);
+
+        const ringGeo2 = new THREE.TorusGeometry(15, 0.1, 16, 100);
+        const ring2 = new THREE.Points(ringGeo2, ringMat);
+        ring2.rotation.x = Math.PI / 2;
+        ring2.position.y = -25;
+        scene.add(ring2);
+
+        // 4. Bầu trời sao (Starfield)
+        const starGeo = new THREE.BufferGeometry();
+        const starPos = new Float32Array(1500 * 3);
+        for(let i=0; i<1500*3; i++) {
+            starPos[i] = (Math.random() - 0.5) * 200;
+        }
+        starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+        const starMat = new THREE.PointsMaterial({color: 0xffffff, size: 0.4, transparent: true, opacity: 0.8});
+        const stars = new THREE.Points(starGeo, starMat);
+        scene.add(stars);
+
+        // 5. Hiệu ứng nhịp đập (Pulse) và Vòng lặp render
         let time = 0;
-
-        // Resize Canvas
-        function resize() {
-            width = window.innerWidth;
-            height = window.innerHeight;
-            centerX = width / 2;
-            centerY = height / 2;
-            
-            heartCanvas.width = width;
-            heartCanvas.height = height;
-            reflectionCanvas.width = width;
-            reflectionCanvas.height = height;
-            starfieldCanvas.width = width;
-            starfieldCanvas.height = height;
-            
-            createStars();
-        }
-
-        // Lớp hạt trái tim
-        class Particle {
-            constructor(x, y, dx, dy, size, color) {
-                this.x = x;
-                this.y = y;
-                this.dx = dx;
-                this.dy = dy;
-                this.size = size;
-                this.color = color;
-                this.age = 0;
-                this.duration = Math.random() * 2 + 1; // 1-3 giây
-            }
-
-            update(dt) {
-                this.x += this.dx * dt;
-                this.y += this.dy * dt;
-                // Hiệu ứng tụ lại
-                this.dx *= 0.98;
-                this.dy *= 0.98;
-                this.age += dt;
-            }
-
-            draw(ctx) {
-                const opacity = 1 - (this.age / this.duration);
-                if (opacity <= 0) return false;
-                ctx.globalAlpha = opacity;
-                ctx.fillStyle = this.color;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fill();
-                return true;
-            }
-        }
-
-        // Tạo hạt trái tim
-        function emitParticles() {
-            for (let i = 0; i < settings.particles / 10; i++) {
-                const t = Math.PI - 2 * Math.PI * Math.random();
-                const pos = pointOnHeart(t, settings.heartSize * (1 + 0.02 * Math.sin(time * 3))); // Hiệu ứng đập
-                const dir = {
-                    x: pos.x * 0.1,
-                    y: -pos.y * 0.1 // Di chuyển lên
-                };
-                particles.push(new Particle(centerX + pos.x, centerY - pos.y, dir.x, dir.y, Math.random() * 2 + 1, settings.color));
-            }
-        }
-
-        // Công thức hình trái tim
-        function pointOnHeart(t, size) {
-            return {
-                x: size * 0.16 * Math.pow(Math.sin(t), 3),
-                y: -size * 0.13 * Math.cos(t) + size * 0.05 * Math.cos(2 * t) + size * 0.02 * Math.cos(3 * t) + size * 0.01 * Math.cos(4 * t)
-            };
-        }
-
-        // Ngôi sao
-        class Star {
-            constructor() {
-                this.x = Math.random() * width;
-                this.y = Math.random() * height;
-                this.size = Math.random() * 2;
-                this.opacity = Math.random();
-                this.velocity = Math.random() * 0.1;
-            }
-
-            update() {
-                this.y += this.velocity;
-                if (this.y > height) this.y = 0;
-            }
-
-            draw(ctx) {
-                ctx.globalAlpha = this.opacity;
-                ctx.fillStyle = 'white';
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-
-        function createStars() {
-            stars = [];
-            for (let i = 0; i < settings.stars; i++) {
-                stars.push(new Star());
-            }
-        }
-
-        // Hiệu ứng đánh chữ
-        function startTypingEffect() {
-            let i = 0;
-            typingText.innerHTML = "";
-            const interval = setInterval(() => {
-                if (i < settings.message.length) {
-                    typingText.innerHTML += settings.message.charAt(i);
-                    i++;
-                } else {
-                    clearInterval(interval);
-                    // Lặp lại hiệu ứng đánh chữ sau 5 giây
-                    setTimeout(startTypingEffect, 5000);
-                }
-            }, settings.typingSpeed);
-        }
-
-        // Main animation loop
-        let lastTime = 0;
-        function animate(timestamp) {
+        function animate() {
             requestAnimationFrame(animate);
-            if (!timestamp) timestamp = 0;
-            const dt = (timestamp - lastTime) / 1000; // Delta time in seconds
-            lastTime = timestamp;
-            time += dt;
+            time += 0.05;
 
-            // Clear canvases
-            heartCtx.clearRect(0, 0, width, height);
-            reflectionCtx.clearRect(0, 0, width, height);
-            starfieldCtx.clearRect(0, 0, width, height);
+            // Làm trái tim đập nhẹ
+            const scale = 1 + 0.05 * Math.sin(time);
+            heartMesh.scale.set(scale, scale, scale);
 
-            // Vẽ nền sao
-            for (const star of stars) {
-                star.update();
-                star.draw(starfieldCtx);
-            }
+            // Xoay các vòng sáng
+            ring1.rotation.z -= 0.01;
+            ring2.rotation.z += 0.015;
+            stars.rotation.y += 0.001;
 
-            // Tạo và vẽ hạt trái tim
-            emitParticles();
-            
-            // Vẽ phản chiếu trước
-            reflectionCtx.filter = `blur(${settings.reflectionBlur}px)`;
-            reflectionCtx.globalAlpha = settings.reflectionOpacity;
-            reflectionCtx.save();
-            reflectionCtx.translate(0, centerY + settings.heartSize / 1.5); // Di chuyển xuống bề mặt phản chiếu
-            reflectionCtx.scale(1, -0.6); // Lật và làm phẳng
-            particles = particles.filter(p => {
-                p.update(dt);
-                p.draw(reflectionCtx); // Vẽ lên canvas phản chiếu trước
-                return p.age < p.duration;
-            });
-            reflectionCtx.restore();
-
-            // Vẽ trái tim chính (không mờ)
-            for (const p of particles) {
-                p.draw(heartCtx);
-            }
+            controls.update(); // Cập nhật camera xoay
+            renderer.render(scene, camera);
         }
 
-        // Khởi tạo
-        window.addEventListener('resize', resize);
-        resize();
-        startTypingEffect();
-        animate();
+        // Tự động căn chỉnh khi đổi kích thước màn hình
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
 
+        animate();
     </script>
 </body>
 </html>
