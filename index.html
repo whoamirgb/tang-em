@@ -12,19 +12,19 @@
         #password-screen {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background-color: #111;
+            background-color: #0a0a0a;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 1000;
-            color: #ff4d6d;
+            color: #ff8da1;
         }
         #password-screen h2 {
-            font-size: 24px;
+            font-size: 22px;
             margin-bottom: 20px;
             text-align: center;
-            text-shadow: 0 0 10px #ff4d6d;
+            text-shadow: 0 0 10px rgba(255, 141, 161, 0.5);
         }
         #password-screen input {
             padding: 12px;
@@ -32,7 +32,7 @@
             width: 80%;
             max-width: 350px;
             text-align: center;
-            border: 2px solid #ff4d6d;
+            border: 2px solid #ff8da1;
             border-radius: 25px;
             background: transparent;
             color: white;
@@ -43,12 +43,12 @@
             font-size: 16px;
             margin-top: 20px;
             cursor: pointer;
-            background-color: #ff4d6d;
-            color: white;
+            background-color: #ff8da1;
+            color: #000;
             border: none;
             border-radius: 25px;
             font-weight: bold;
-            box-shadow: 0 0 15px #ff4d6d;
+            box-shadow: 0 0 15px rgba(255, 141, 161, 0.5);
             transition: 0.3s;
         }
         #password-screen button:active { transform: scale(0.95); }
@@ -56,22 +56,19 @@
 </head>
 <body>
 
-    <!-- MÀN HÌNH MẬT KHẨU -->
     <div id="password-screen">
         <h2>Em có yêu anh nhiều không?</h2>
         <input type="text" id="pass-input" placeholder="Nhập câu trả lời...">
         <button onclick="checkPassword()">Xác Nhận</button>
     </div>
 
-    <!-- VÙNG CHỨA NHẠC YOUTUBE -->
-    <div id="audio-container" style="display:none;"></div>
+    <audio id="bg-music" src="nhac.mp3" loop preload="auto"></audio>
 
-    <!-- Nhúng thư viện Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
     <script>
-        // XỬ LÝ MẬT KHẨU VÀ PHÁT NHẠC
+        // XỬ LÝ MẬT KHẨU VÀ PHÁT NHẠC MOBILE
         function checkPassword() {
             const input = document.getElementById('pass-input').value.trim();
             const correctPass = "Em yêu chồng đẹp trai của em nhiều lắm";
@@ -79,18 +76,15 @@
             if (input === correctPass) {
                 document.getElementById('password-screen').style.display = 'none';
                 
-                // Mở nhạc Youtube (Auto play khi đã có tương tác click)
-                const iframe = `<iframe width="1" height="1" src="https://www.youtube.com/embed/-Y9VtoPvtuM?autoplay=1&loop=1&playlist=-Y9VtoPvtuM" frameborder="0" allow="autoplay"></iframe>`;
-                document.getElementById('audio-container').innerHTML = iframe;
+                // Mở nhạc trực tiếp qua Audio Object - Đảm bảo kêu 100% trên điện thoại
+                document.getElementById('bg-music').play();
                 
-                // Khởi động không gian 3D
                 init3D();
             } else {
                 alert("Sai rồi á! Phải khen chồng như thế nào nhờ? (Gợi ý: Em yêu chồng đẹp trai...)");
             }
         }
 
-        // KHỞI TẠO KHÔNG GIAN 3D
         function init3D() {
             const scene = new THREE.Scene();
             
@@ -108,26 +102,26 @@
             controls.autoRotate = true;
             controls.autoRotateSpeed = 1.0;
 
-            // TẠO TEXTURE CHỮ "T" (Màu đỏ/hồng nhạt lấp lánh)
+            // TEXTURE CHỮ "T" MÀU ĐỎ NHẠT / PASTEL
             function createLetterTexture() {
                 const canvas = document.createElement('canvas');
                 canvas.width = 128; 
                 canvas.height = 128;
                 const ctx = canvas.getContext('2d');
                 
-                ctx.fillStyle = '#ff4d6d'; // Màu hồng đỏ nhạt và sáng hơn
+                ctx.fillStyle = '#e57385'; // Đỏ nhạt / Mờ theo ảnh
                 ctx.font = 'bold 90px "Arial", sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 
-                ctx.shadowColor = '#ff6699';
-                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#d96675';
+                ctx.shadowBlur = 8;
                 ctx.fillText('T', 64, 64);
                 return new THREE.CanvasTexture(canvas);
             }
             const tTexture = createLetterTexture();
 
-            // TẠO TRÁI TIM LỚN 
+            // TẠO TRÁI TIM LỚN (MÀU MỜ)
             const particlesCount = 8000; 
             const geometry = new THREE.BufferGeometry();
             const positions = new Float32Array(particlesCount * 3);
@@ -151,8 +145,8 @@
                     positions[added * 3 + 1] = z * scale; 
                     positions[added * 3 + 2] = y * scale; 
 
-                    // Pha màu cho sáng hơn
-                    color.setHSL(0.98 + Math.random() * 0.02, 1.0, 0.6 + Math.random() * 0.2);
+                    // Pha màu tone pastel, giảm rực rỡ
+                    color.setHSL(0.96 + Math.random() * 0.04, 0.55 + Math.random() * 0.1, 0.6 + Math.random() * 0.1);
                     colors[added * 3] = color.r;
                     colors[added * 3 + 1] = color.g;
                     colors[added * 3 + 2] = color.b;
@@ -168,7 +162,7 @@
                 map: tTexture,
                 vertexColors: true,
                 transparent: true,
-                opacity: 0.85,
+                opacity: 0.8,
                 depthWrite: false, 
                 blending: THREE.AdditiveBlending 
             });
@@ -177,111 +171,80 @@
             heartMesh.position.y = 8; 
             scene.add(heartMesh);
 
-            // TẠO VÒNG TRÒN CHỮ Ở DƯỚI
-            function createTextRingTexture(wordsArray, textColor, fontSize) {
+            // TẠO CÁC CHỮ PHẲNG NẰM TRÊN MẶT ĐẤT ĐỂ LÀM LỐC XOÁY
+            function createTextPlane(text) {
                 const canvas = document.createElement('canvas');
-                canvas.width = 2048;
-                canvas.height = 2048;
                 const ctx = canvas.getContext('2d');
-                ctx.translate(1024, 1024);
-                ctx.fillStyle = textColor; 
-                ctx.font = `bold ${fontSize}px "Courier New", Courier, monospace`;
+                ctx.font = 'bold 36px "Courier New", monospace';
+                const metrics = ctx.measureText(text);
+                canvas.width = metrics.width + 20;
+                canvas.height = 50;
+                
+                ctx.font = 'bold 36px "Courier New", monospace';
+                ctx.fillStyle = '#ffb3c6'; // Chữ hồng nhạt
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                const count = wordsArray.length;
-                const radius = 850; 
-                for (let i = 0; i < count; i++) {
-                    ctx.save();
-                    const angle = (i / count) * Math.PI * 2;
-                    ctx.rotate(angle);
-                    ctx.fillText(wordsArray[i], 0, -radius);
-                    ctx.restore();
-                }
-                return new THREE.CanvasTexture(canvas);
+                ctx.fillText(text, canvas.width/2, canvas.height/2);
+
+                const texture = new THREE.CanvasTexture(canvas);
+                const geo = new THREE.PlaneGeometry(canvas.width / 15, canvas.height / 15);
+                const mat = new THREE.MeshBasicMaterial({
+                    map: texture,
+                    transparent: true,
+                    opacity: 1,
+                    side: THREE.DoubleSide,
+                    depthWrite: false,
+                    blending: THREE.AdditiveBlending
+                });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.rotation.x = -Math.PI / 2; // Đặt chữ nằm bẹp xuống mâm
+                return mesh;
             }
 
-            const listWords = ['I love you', 'Thuỳ', 'Moaz', 'Love', 'Happy', 'Bé iu'];
-            const listWords2 = ['Thuỳ', 'Bé iu', 'Love', 'I love you', 'Moaz', 'Happy'];
-            
-            const ringGeo = new THREE.PlaneGeometry(65, 65);
-            const ringMat = new THREE.MeshBasicMaterial({ map: createTextRingTexture([...listWords, ...listWords]), transparent: true, opacity: 0.6, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending });
-            const textRing1 = new THREE.Mesh(ringGeo, ringMat);
-            textRing1.rotation.x = -Math.PI / 2;
-            textRing1.position.y = -10; 
-            scene.add(textRing1);
+            // MẢNG LƯU TRỮ CÁC CHỮ TRONG LỐC XOÁY VORTEX
+            const wordsList = ['I love you', 'Thuỳ', 'Moaz', 'Love', 'Happy', 'Bé iu', 'Anh Yêu Em', 'Thật sự yêu em rất nhiều đó ❤️'];
+            const vortexWords = [];
+            const vortexCount = 80; // Số lượng chữ xoay
 
-            const ringGeo2 = new THREE.PlaneGeometry(45, 45);
-            const ringMat2 = new THREE.MeshBasicMaterial({ map: createTextRingTexture([...listWords2, ...listWords2], '#cccccc', 50), transparent: true, opacity: 0.4, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending });
-            const textRing2 = new THREE.Mesh(ringGeo2, ringMat2);
-            textRing2.rotation.x = -Math.PI / 2;
-            textRing2.position.y = -10.1;
-            scene.add(textRing2);
-
-            // HIỆU ỨNG TẠO HẠT TIM NHỎ BAY TỪ VÒNG LÊN TRÁI TIM LỚN
-            function createTinyHeart() {
-                const canvas = document.createElement('canvas');
-                canvas.width = 32; canvas.height = 32;
-                const ctx = canvas.getContext('2d');
-                ctx.fillStyle = '#ff6699';
-                ctx.shadowColor = '#ff4d6d';
-                ctx.shadowBlur = 5;
-                ctx.beginPath();
-                ctx.moveTo(16, 10);
-                ctx.bezierCurveTo(16, 5, 10, 0, 5, 0);
-                ctx.bezierCurveTo(0, 0, 0, 10, 0, 10);
-                ctx.bezierCurveTo(0, 16, 16, 26, 16, 32);
-                ctx.bezierCurveTo(16, 26, 32, 16, 32, 10);
-                ctx.bezierCurveTo(32, 10, 32, 0, 27, 0);
-                ctx.bezierCurveTo(22, 0, 16, 5, 16, 10);
-                ctx.fill();
-                return new THREE.CanvasTexture(canvas);
+            for (let i = 0; i < vortexCount; i++) {
+                const randomWord = wordsList[Math.floor(Math.random() * wordsList.length)];
+                const mesh = createTextPlane(randomWord);
+                
+                // Khởi tạo vị trí ngẫu nhiên trong dải bán kính từ 5 đến 60
+                const radius = 5 + Math.random() * 55; 
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 0.01 + Math.random() * 0.02; // Tốc độ xoay
+                
+                mesh.position.y = -10; // Cùng độ sâu dưới đáy
+                
+                vortexWords.push({ mesh, radius, angle, speed });
+                scene.add(mesh);
             }
-            const tinyHeartTexture = createTinyHeart();
-            const flyingHeartsCount = 150;
-            const flyingGeo = new THREE.BufferGeometry();
-            const flyingPos = new Float32Array(flyingHeartsCount * 3);
-            const flyingVel = [];
-            for(let i=0; i<flyingHeartsCount; i++) {
-                const r = 30 * Math.random();
-                const theta = Math.random() * 2 * Math.PI;
-                flyingPos[i*3] = r * Math.cos(theta);
-                flyingPos[i*3+1] = -10 + Math.random() * 18; 
-                flyingPos[i*3+2] = r * Math.sin(theta);
-                flyingVel.push(0.05 + Math.random() * 0.1); // Tốc độ bay lên
-            }
-            flyingGeo.setAttribute('position', new THREE.BufferAttribute(flyingPos, 3));
-            const flyingMat = new THREE.PointsMaterial({
-                size: 3.5, map: tinyHeartTexture, transparent: true, opacity: 0.7, depthWrite: false, blending: THREE.AdditiveBlending
-            });
-            const flyingParticles = new THREE.Points(flyingGeo, flyingMat);
-            scene.add(flyingParticles);
 
-            // TẠO 3 CHỮ "ANH" "YÊU" "EM" BAY LƯỢN XUNG QUANH NHƯ CHIM
+            // CHIM BAY "ANH" "YÊU" "EM"
             function createFloatingWord(word, color) {
                 const canvas = document.createElement('canvas');
                 canvas.width = 256; canvas.height = 128;
                 const ctx = canvas.getContext('2d');
                 ctx.fillStyle = color;
-                ctx.font = 'bold 50px Arial';
+                ctx.font = 'bold 45px Arial';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.shadowColor = color;
-                ctx.shadowBlur = 10;
                 ctx.fillText(word, 128, 64);
                 const texture = new THREE.CanvasTexture(canvas);
-                const mat = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending });
+                const mat = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending });
                 const sprite = new THREE.Sprite(mat);
-                sprite.scale.set(12, 6, 1);
+                sprite.scale.set(10, 5, 1);
                 return sprite;
             }
             const wordAnh = createFloatingWord("Anh", "#ffffff");
-            const wordYeu = createFloatingWord("Yêu", "#ff6699");
+            const wordYeu = createFloatingWord("Yêu", "#ffb3c6");
             const wordEm = createFloatingWord("Em", "#ffffff");
             scene.add(wordAnh);
             scene.add(wordYeu);
             scene.add(wordEm);
 
-            // NỀN BẦU TRỜI SAO
+            // BẦU TRỜI SAO
             const starGeo = new THREE.BufferGeometry();
             const starPos = new Float32Array(1500 * 3);
             for(let i = 0; i < 1500 * 3; i++) {
@@ -298,36 +261,42 @@
                 requestAnimationFrame(animate);
                 time += 0.015;
 
-                // Tim đập
-                const scale = 1 + 0.03 * Math.sin(time * 4);
+                // Tim đập nhẹ
+                const scale = 1 + 0.02 * Math.sin(time * 3);
                 heartMesh.scale.set(scale, scale, scale);
 
-                // Hai vòng tròn xoay
-                textRing1.rotation.z -= 0.002;
-                textRing2.rotation.z += 0.003;
-                
-                // Cập nhật vị trí các hạt tim bay (Hút vào lõi trái tim)
-                const flyPos = flyingParticles.geometry.attributes.position.array;
-                for(let i=0; i<flyingHeartsCount; i++) {
-                    flyPos[i*3+1] += flyingVel[i]; // Bay lên
-                    flyPos[i*3] += (0 - flyPos[i*3]) * 0.02; // Hút nhẹ vào tâm X
-                    flyPos[i*3+2] += (0 - flyPos[i*3+2]) * 0.02; // Hút nhẹ vào tâm Z
-                    
-                    // Khi bay tới lõi trái tim thì reset rớt xuống vòng tròn dưới cùng
-                    if (flyPos[i*3+1] > 8) {
-                        const r = 25 + Math.random() * 10;
-                        const theta = Math.random() * 2 * Math.PI;
-                        flyPos[i*3] = r * Math.cos(theta);
-                        flyPos[i*3+1] = -10;
-                        flyPos[i*3+2] = r * Math.sin(theta);
+                // HIỆU ỨNG LỐC XOÁY VORTEX CUỐN VÀO TÂM
+                vortexWords.forEach(vw => {
+                    vw.radius -= 0.1; // Càng ngày càng tụt vào tâm
+                    vw.angle -= vw.speed; // Xoay vòng
+
+                    // Nếu chữ chui quá sâu vào tâm -> Hồi sinh lại ở mép ngoài cùng
+                    if (vw.radius < 5) {
+                        vw.radius = 60;
+                        vw.angle = Math.random() * Math.PI * 2;
                     }
-                }
-                flyingParticles.geometry.attributes.position.needsUpdate = true;
+
+                    // Tính toán vị trí X và Z
+                    vw.mesh.position.x = vw.radius * Math.cos(vw.angle);
+                    vw.mesh.position.z = vw.radius * Math.sin(vw.angle);
+                    
+                    // Xoay mặt chữ để tạo cảm giác trôi theo dòng nước
+                    vw.mesh.rotation.z = -vw.angle;
+
+                    // Hiệu ứng mờ dần: Sinh ra mờ -> rõ -> vào tâm mờ dần mất đi
+                    if (vw.radius > 50) {
+                        vw.mesh.material.opacity = (60 - vw.radius) / 10; // Vừa sinh ra ngoài rìa thì mờ
+                    } else if (vw.radius < 15) {
+                        vw.mesh.material.opacity = (vw.radius - 5) / 10; // Sắp chết ở lõi thì mờ dần
+                    } else {
+                        vw.mesh.material.opacity = 1; // Đoạn giữa thì sáng rõ
+                    }
+                });
 
                 // Chữ Anh Yêu Em bay lượn ngẫu nhiên
-                wordAnh.position.set(Math.sin(time * 0.8) * 18, Math.cos(time * 0.5) * 6 + 8, Math.sin(time * 0.6) * 18);
-                wordYeu.position.set(Math.sin(time * 0.7 + 2) * 20, Math.cos(time * 0.6 + 1) * 7 + 8, Math.sin(time * 0.5 + 2) * 20);
-                wordEm.position.set(Math.sin(time * 0.9 + 4) * 17, Math.cos(time * 0.4 + 2) * 5 + 8, Math.sin(time * 0.8 + 4) * 17);
+                wordAnh.position.set(Math.sin(time * 0.8) * 16, Math.cos(time * 0.5) * 6 + 8, Math.sin(time * 0.6) * 16);
+                wordYeu.position.set(Math.sin(time * 0.7 + 2) * 18, Math.cos(time * 0.6 + 1) * 7 + 8, Math.sin(time * 0.5 + 2) * 18);
+                wordEm.position.set(Math.sin(time * 0.9 + 4) * 15, Math.cos(time * 0.4 + 2) * 5 + 8, Math.sin(time * 0.8 + 4) * 15);
 
                 stars.rotation.y += 0.0003;
                 controls.update();
