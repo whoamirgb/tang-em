@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trái Tim Tặng Bạn</title>
+    <title>Trái Tim Tặng Bạn - Xịn Hơn</title>
     <style>
         body, html {
             margin: 0;
@@ -15,226 +15,260 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            font-family: 'Courier New', Courier, monospace;
+            font-family: 'Montserrat', sans-serif; /* Sử dụng font chữ đẹp hơn */
         }
+        
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap');
+
         canvas {
             position: absolute;
             z-index: 1;
         }
+
         .text-container {
             position: absolute;
-            z-index: 2;
+            z-index: 3;
             color: #ff4d6d;
             text-align: center;
             pointer-events: none;
-            text-shadow: 0 0 10px #ff4d6d, 0 0 20px #ff4d6d;
-            animation: pulse 1s infinite alternate;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            margin-top: -150px; /* Di chuyển văn bản lên trên trái tim */
         }
+        
         h1 {
-            font-size: 2rem;
+            font-size: 3rem;
             margin: 0;
+            text-shadow: 0 0 15px #ff4d6d, 0 0 30px #ff4d6d;
+            letter-spacing: 2px;
         }
+        
         p {
-            font-size: 1.2rem;
-            margin-top: 10px;
+            font-size: 1.4rem;
+            margin-top: 15px;
             color: white;
-            text-shadow: none;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
+            min-height: 1.6em; /* Giữ chỗ cho hiệu ứng đánh chữ */
         }
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            100% { transform: scale(1.05); }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 2rem; }
+            p { font-size: 1.1rem; }
+            .text-container { margin-top: -100px; }
         }
     </style>
 </head>
 <body>
 
     <div class="text-container">
+        <!-- BẠN CÓ THỂ SỬA CHỮ Ở ĐÂY -->
         <h1>Anh Yêu Em</h1>
-        <p>Code này làm miễn phí nha!</p>
+        <p id="typingText"></p>
     </div>
 
-    <canvas id="pinkboard"></canvas>
+    <!-- Canvas cho nền sao -->
+    <canvas id="starfieldCanvas"></canvas>
+    <!-- Canvas cho trái tim chính -->
+    <canvas id="heartCanvas"></canvas>
+    <!-- Canvas cho phản chiếu -->
+    <canvas id="reflectionCanvas"></canvas>
 
     <script>
-        /* Khởi tạo hiệu ứng Canvas Trái Tim */
-        var settings = {
-            particles: {
-                length:   500, // Số lượng hạt
-                duration:   2, // Thời gian sống của hạt (giây)
-                velocity: 100, // Tốc độ hạt
-                effect: -0.75, // Hiệu ứng tụ lại
-                size:      30, // Kích thước hạt
-            },
+        const heartCanvas = document.getElementById('heartCanvas');
+        const heartCtx = heartCanvas.getContext('2d');
+        const reflectionCanvas = document.getElementById('reflectionCanvas');
+        const reflectionCtx = reflectionCanvas.getContext('2d');
+        const starfieldCanvas = document.getElementById('starfieldCanvas');
+        const starfieldCtx = starfieldCanvas.getContext('2d');
+        const typingText = document.getElementById('typingText');
+
+        // Cài đặt
+        const settings = {
+            particles: 600, // Số lượng hạt trái tim
+            heartSize: 350, // Kích thước trái tim
+            color: '#ff3050', // Màu trái tim
+            reflectionBlur: 20, // Độ mờ phản chiếu
+            reflectionOpacity: 0.35, // Độ mờ của phản chiếu
+            stars: 200, // Số lượng ngôi sao
+            typingSpeed: 60, // Tốc độ đánh chữ (ms/ký tự)
+            // BẠN CÓ THỂ SỬA DÒNG CHỮ THỨ HAI Ở ĐÂY
+            message: "Mã nguồn này xịn hơn nhiều! ...và hoàn toàn miễn phí nha! ❤️"
         };
 
-        (function(){var b=0;var c=["ms","moz","webkit","o"];for(var a=0;a<c.length&&!window.requestAnimationFrame;++a){window.requestAnimationFrame=window[c[a]+"RequestAnimationFrame"];window.cancelAnimationFrame=window[c[a]+"CancelAnimationFrame"]||window[c[a]+"CancelRequestAnimationFrame"]}if(!window.requestAnimationFrame){window.requestAnimationFrame=function(h,e){var d=new Date().getTime();var f=Math.max(0,16-(d-b));var g=window.setTimeout(function(){h(d+f)},f);b=d+f;return g}}if(!window.cancelAnimationFrame){window.cancelAnimationFrame=function(d){clearTimeout(d)}}}());
+        let width, height, centerX, centerY;
+        let particles = [];
+        let reflectionParticles = [];
+        let stars = [];
+        let time = 0;
 
-        var Point = (function() {
-            function Point(x, y) {
-                this.x = (typeof x !== 'undefined') ? x : 0;
-                this.y = (typeof y !== 'undefined') ? y : 0;
-            }
-            Point.prototype.clone = function() { return new Point(this.x, this.y); };
-            Point.prototype.length = function(length) {
-                if (typeof length == 'undefined') return Math.sqrt(this.x * this.x + this.y * this.y);
-                this.normalize();
-                this.x *= length;
-                this.y *= length;
-                return this;
-            };
-            Point.prototype.normalize = function() {
-                var length = this.length();
-                this.x /= length;
-                this.y /= length;
-                return this;
-            };
-            return Point;
-        })();
+        // Resize Canvas
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            centerX = width / 2;
+            centerY = height / 2;
+            
+            heartCanvas.width = width;
+            heartCanvas.height = height;
+            reflectionCanvas.width = width;
+            reflectionCanvas.height = height;
+            starfieldCanvas.width = width;
+            starfieldCanvas.height = height;
+            
+            createStars();
+        }
 
-        var Particle = (function() {
-            function Particle() {
-                this.position = new Point();
-                this.velocity = new Point();
-                this.acceleration = new Point();
+        // Lớp hạt trái tim
+        class Particle {
+            constructor(x, y, dx, dy, size, color) {
+                this.x = x;
+                this.y = y;
+                this.dx = dx;
+                this.dy = dy;
+                this.size = size;
+                this.color = color;
                 this.age = 0;
-            }
-            Particle.prototype.initialize = function(x, y, dx, dy) {
-                this.position.x = x;
-                this.position.y = y;
-                this.velocity.x = dx;
-                this.velocity.y = dy;
-                this.acceleration.x = dx * settings.particles.effect;
-                this.acceleration.y = dy * settings.particles.effect;
-                this.age = 0;
-            };
-            Particle.prototype.update = function(deltaTime) {
-                this.position.x += this.velocity.x * deltaTime;
-                this.position.y += this.velocity.y * deltaTime;
-                this.velocity.x += this.acceleration.x * deltaTime;
-                this.velocity.y += this.acceleration.y * deltaTime;
-                this.age += deltaTime;
-            };
-            Particle.prototype.draw = function(context, image) {
-                function ease(t) { return (--t) * t * t + 1; }
-                var size = image.width * ease(this.age / settings.particles.duration);
-                context.globalAlpha = 1 - this.age / settings.particles.duration;
-                context.drawImage(image, this.position.x - size / 2, this.position.y - size / 2, size, size);
-            };
-            return Particle;
-        })();
-
-        var ParticlePool = (function() {
-            var particles,
-                firstActive = 0,
-                firstFree   = 0,
-                duration    = settings.particles.duration;
-
-            function ParticlePool(length) {
-                particles = new Array(length);
-                for (var i = 0; i < particles.length; i++) particles[i] = new Particle();
-            }
-            ParticlePool.prototype.add = function(x, y, dx, dy) {
-                particles[firstFree].initialize(x, y, dx, dy);
-                firstFree++;
-                if (firstFree   == particles.length) firstFree   = 0;
-                if (firstActive == firstFree       ) firstActive++;
-                if (firstActive == particles.length) firstActive = 0;
-            };
-            ParticlePool.prototype.update = function(deltaTime) {
-                var i;
-                if (firstActive < firstFree) {
-                    for (i = firstActive; i < firstFree; i++) particles[i].update(deltaTime);
-                }
-                if (firstFree < firstActive) {
-                    for (i = firstActive; i < particles.length; i++) particles[i].update(deltaTime);
-                    for (i = 0; i < firstFree; i++) particles[i].update(deltaTime);
-                }
-                while (particles[firstActive].age >= duration && firstActive != firstFree) {
-                    firstActive++;
-                    if (firstActive == particles.length) firstActive = 0;
-                }
-            };
-            ParticlePool.prototype.draw = function(context, image) {
-                if (firstActive < firstFree) {
-                    for (i = firstActive; i < firstFree; i++) particles[i].draw(context, image);
-                }
-                if (firstFree < firstActive) {
-                    for (i = firstActive; i < particles.length; i++) particles[i].draw(context, image);
-                    for (i = 0; i < firstFree; i++) particles[i].draw(context, image);
-                }
-            };
-            return ParticlePool;
-        })();
-
-        (function(canvas) {
-            var context = canvas.getContext('2d'),
-                particles = new ParticlePool(settings.particles.length),
-                particleRate = settings.particles.length / settings.particles.duration, 
-                time;
-
-            function pointOnHeart(t) {
-                return new Point(
-                    160 * Math.pow(Math.sin(t), 3),
-                    130 * Math.cos(t) - 50 * Math.cos(2 * t) - 20 * Math.cos(3 * t) - 10 * Math.cos(4 * t) + 25
-                );
+                this.duration = Math.random() * 2 + 1; // 1-3 giây
             }
 
-            var image = (function() {
-                var canvas  = document.createElement('canvas'),
-                    context = canvas.getContext('2d');
-                canvas.width  = settings.particles.size;
-                canvas.height = settings.particles.size;
-                function to(t) {
-                    var point = pointOnHeart(t);
-                    point.x = settings.particles.size / 2 + point.x * settings.particles.size / 350;
-                    point.y = settings.particles.size / 2 - point.y * settings.particles.size / 350;
-                    return point;
-                }
-                context.beginPath();
-                var t = -Math.PI;
-                var point = to(t);
-                context.moveTo(point.x, point.y);
-                while (t < Math.PI) {
-                    t += 0.01;
-                    point = to(t);
-                    context.lineTo(point.x, point.y);
-                }
-                context.closePath();
-                context.fillStyle = '#ff3050'; // Màu của hạt trái tim
-                context.fill();
-                var image = new Image();
-                image.src = canvas.toDataURL();
-                return image;
-            })();
-
-            function render() {
-                requestAnimationFrame(render);
-                var newTime   = new Date().getTime() / 1000,
-                    deltaTime = newTime - (time || newTime);
-                time = newTime;
-
-                context.clearRect(0, 0, canvas.width, canvas.height);
-                var amount = particleRate * deltaTime;
-                for (var i = 0; i < amount; i++) {
-                    var pos = pointOnHeart(Math.PI - 2 * Math.PI * Math.random());
-                    var dir = pos.clone().length(settings.particles.velocity);
-                    particles.add(canvas.width / 2 + pos.x, canvas.height / 2 - pos.y, dir.x, -dir.y);
-                }
-                particles.update(deltaTime);
-                particles.draw(context, image);
+            update(dt) {
+                this.x += this.dx * dt;
+                this.y += this.dy * dt;
+                // Hiệu ứng tụ lại
+                this.dx *= 0.98;
+                this.dy *= 0.98;
+                this.age += dt;
             }
 
-            function onResize() {
-                canvas.width  = canvas.clientWidth;
-                canvas.height = canvas.clientHeight;
+            draw(ctx) {
+                const opacity = 1 - (this.age / this.duration);
+                if (opacity <= 0) return false;
+                ctx.globalAlpha = opacity;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                return true;
             }
-            window.onresize = onResize;
+        }
 
-            setTimeout(function() {
-                onResize();
-                render();
-            }, 10);
-        })(document.getElementById('pinkboard'));
+        // Tạo hạt trái tim
+        function emitParticles() {
+            for (let i = 0; i < settings.particles / 10; i++) {
+                const t = Math.PI - 2 * Math.PI * Math.random();
+                const pos = pointOnHeart(t, settings.heartSize * (1 + 0.02 * Math.sin(time * 3))); // Hiệu ứng đập
+                const dir = {
+                    x: pos.x * 0.1,
+                    y: -pos.y * 0.1 // Di chuyển lên
+                };
+                particles.push(new Particle(centerX + pos.x, centerY - pos.y, dir.x, dir.y, Math.random() * 2 + 1, settings.color));
+            }
+        }
+
+        // Công thức hình trái tim
+        function pointOnHeart(t, size) {
+            return {
+                x: size * 0.16 * Math.pow(Math.sin(t), 3),
+                y: -size * 0.13 * Math.cos(t) + size * 0.05 * Math.cos(2 * t) + size * 0.02 * Math.cos(3 * t) + size * 0.01 * Math.cos(4 * t)
+            };
+        }
+
+        // Ngôi sao
+        class Star {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.size = Math.random() * 2;
+                this.opacity = Math.random();
+                this.velocity = Math.random() * 0.1;
+            }
+
+            update() {
+                this.y += this.velocity;
+                if (this.y > height) this.y = 0;
+            }
+
+            draw(ctx) {
+                ctx.globalAlpha = this.opacity;
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function createStars() {
+            stars = [];
+            for (let i = 0; i < settings.stars; i++) {
+                stars.push(new Star());
+            }
+        }
+
+        // Hiệu ứng đánh chữ
+        function startTypingEffect() {
+            let i = 0;
+            typingText.innerHTML = "";
+            const interval = setInterval(() => {
+                if (i < settings.message.length) {
+                    typingText.innerHTML += settings.message.charAt(i);
+                    i++;
+                } else {
+                    clearInterval(interval);
+                    // Lặp lại hiệu ứng đánh chữ sau 5 giây
+                    setTimeout(startTypingEffect, 5000);
+                }
+            }, settings.typingSpeed);
+        }
+
+        // Main animation loop
+        let lastTime = 0;
+        function animate(timestamp) {
+            requestAnimationFrame(animate);
+            if (!timestamp) timestamp = 0;
+            const dt = (timestamp - lastTime) / 1000; // Delta time in seconds
+            lastTime = timestamp;
+            time += dt;
+
+            // Clear canvases
+            heartCtx.clearRect(0, 0, width, height);
+            reflectionCtx.clearRect(0, 0, width, height);
+            starfieldCtx.clearRect(0, 0, width, height);
+
+            // Vẽ nền sao
+            for (const star of stars) {
+                star.update();
+                star.draw(starfieldCtx);
+            }
+
+            // Tạo và vẽ hạt trái tim
+            emitParticles();
+            
+            // Vẽ phản chiếu trước
+            reflectionCtx.filter = `blur(${settings.reflectionBlur}px)`;
+            reflectionCtx.globalAlpha = settings.reflectionOpacity;
+            reflectionCtx.save();
+            reflectionCtx.translate(0, centerY + settings.heartSize / 1.5); // Di chuyển xuống bề mặt phản chiếu
+            reflectionCtx.scale(1, -0.6); // Lật và làm phẳng
+            particles = particles.filter(p => {
+                p.update(dt);
+                p.draw(reflectionCtx); // Vẽ lên canvas phản chiếu trước
+                return p.age < p.duration;
+            });
+            reflectionCtx.restore();
+
+            // Vẽ trái tim chính (không mờ)
+            for (const p of particles) {
+                p.draw(heartCtx);
+            }
+        }
+
+        // Khởi tạo
+        window.addEventListener('resize', resize);
+        resize();
+        startTypingEffect();
+        animate();
+
     </script>
 </body>
 </html>
